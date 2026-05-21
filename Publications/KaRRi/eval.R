@@ -538,62 +538,6 @@ tripTimeRelDirectDistanceDistributionPlot <- function(file_base,
 }
 
 library(ggplot2)
-absTripStatRelDirectDistancePlot <- function(file_base,
-                                                        time_var = "cost_no_trip",
-                                                      y_min=0,
-                                                      bin_width = 1, # tenths of seconds,
-                                                      min_num_per_bin = 1,
-                                                      x_min=0, # tenths of seconds
-                                             x_max = NA, # tenths of seconds
-                                             y_breaks=waiver(),
-                                             y_label_func = waiver()
-) {
-  mc <- fread(paste0(file_base, ".modechoice.csv"))
-  as <- fread(paste0(file_base, ".assignmentquality.csv"))
-  ba <- fread(paste0(file_base, ".bestassignments.csv"))
-  setkey(mc, request_id)
-  setkey(as, request_id)
-  setkey(ba, request_id)
-  mc <- mc[mode == "Taxi"]
-  as <- as[mc, nomatch=0]
-  ba <- ba[mc, nomatch=0]
-  as[, cost_no_trip := cost - trip_time]
-  as[, walk_total_time := walk_to_pickup_time + walk_to_dropoff_time]
-  # View(as)
-  
-  df <- data.table(tt = ba$direct_od_dist, var_vals = as[[time_var]])
-  df <- df[tt <= as$ride_time]
-  df <- df[order(tt)]
-  df <- df[tt >= x_min]
-  if (!is.na(x_max))
-    df <- df[tt <= x_max]
-  print(mean(df$var_vals))
-  print(summary(lm(formula = var_vals ~ tt, data=df)))
-  print(cor.test(df$tt, df$var_vals, method = "pearson"))
-  print(cor.test(df$tt, df$var_vals, method = "spearman"))
-  
-  # df[, ratio := var_vals / tt]
-  # df[, bin_idx := floor(df$tt / bin_width)]
-  # agg <- df[, .(r = mean(ratio), n =.N, var_vals=mean(var_vals)), by = bin_idx]
-  # agg <- agg[order(bin_idx)]
-  # agg[, tt := bin_idx * bin_width]
-  # agg <- agg[tt >= x_min]
-  # if (!is.na(x_max))
-  #   agg <- agg[tt <= x_max]
-  # agg <- agg[n >= min_num_per_bin]
-  # print(paste0("df num rows = ", nrow(df), ", agg num rows = ", nrow(agg)))
-  
-  # print(mean(agg$var_vals))
-  # print(summary(lm(formula = var_vals ~ tt, data=agg)))
-  
-  ggplot(df, aes(x=tt,y=var_vals)) + 
-    geom_point(size=0.02) + 
-    geom_smooth(method='lm') +
-    scale_x_continuous(name="direct dist", breaks=6000*(0:500), labels=function(x) convertToMMSS(x / 10)) +
-    scale_y_continuous(name=time_var, limits=c(y_min, NA), breaks=y_breaks, labels=y_label_func)
-    # scale_y_continuous(name="non-trip cost / direct dist", limits=c(y_min,NA), breaks=c(y_min,1,1.5,2,3,2*(2:50)))
-}
-
 histogramVar <- function(file_base,
                                              var = "direct_od_dist",
                                              y_min=0,
