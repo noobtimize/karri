@@ -124,11 +124,11 @@ namespace karri {
                 notUsingVehicleIsBest = false;
                 notUsingVehicleDist = INFTY;
 
-                // Track per-vehicle best assignment for batched multi-vehicle dispatch
                 if (asgn.vehicle != nullptr) {
                     int vid = asgn.vehicle->vehicleId;
-                    auto it = bestAssignmentPerVehicle.find(vid);
-                    if (it == bestAssignmentPerVehicle.end() || it->first != vid) {
+                    auto it = bestCostPerVehicle.find(vid);
+                    if (it == bestCostPerVehicle.end() || cost < it->second ||
+                        (cost == it->second && breakCostTie(asgn, bestAssignmentPerVehicle[vid]))) {
                         bestAssignmentPerVehicle[vid] = asgn;
                         bestCostPerVehicle[vid] = cost;
                     }
