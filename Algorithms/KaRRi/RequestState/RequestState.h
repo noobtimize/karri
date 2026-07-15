@@ -35,6 +35,7 @@
 #include "DataStructures/Containers/Subset.h"
 #include "Algorithms/KaRRi/CostCalculator.h"
 #include "Algorithms/KaRRi/BaseObjects/PDLocs.h"
+#include <unordered_map>
 
 namespace karri {
 
@@ -122,10 +123,53 @@ namespace karri {
                 bestCost = cost;
                 notUsingVehicleIsBest = false;
                 notUsingVehicleDist = INFTY;
+
+                // Track per-vehicle best assignment for batched multi-vehicle dispatch
+                if (asgn.vehicle != nullptr) {
+                    int vid = asgn.vehicle->vehicleId;
+                    auto it = bestAssignmentPerVehicle.find(vid);
+                    if (it == bestAssignmentPerVehicle.end() || it->first != vid) {
+                        bestAssignmentPerVehicle[vid] = asgn;
+                        bestCostPerVehicle[vid] = cost;
+                    }
+                }
+
                 return true;
             }
             return false;
         }
+
+        // ── Per-vehicle assignment tracking for batched multi-vehicle dispatch ──
+
+        const Assignment& getBestAssignmentFor(int vehicleId) const {
+            static Assignment emptyAsgn;
+            auto it = bestAssignmentPerVehicle.find(vehicleId);
+            return (it != bestAssignmentPerVehicle.end()) ? it->second : emptyAsgn;
+        }
+
+        void updateBestIfImprovedFor(int vehicleId, const Assignment& asgn) {
+            const auto cost = calculator.calc(asgn, *this);
+            if (cost >= INFTY) return;
+            auto it = bestCostPerVehicle.find(vehicleId);
+            if (it == bestCostPerVehicle.end() || cost < it->second ||
+                (cost == it->second && breakCostTie(asgn, bestAssignmentPerVehicle[vehicleId]))) {
+                bestAssignmentPerVehicle[vehicleId] = asgn;
+                bestCostPerVehicle[vehicleId] = cost;
+                if (cost < bestCost || (cost == bestCost &&
+                    breakCostTie(asgn, bestAssignment))) {
+                    bestAssignment = asgn;
+                    bestCost = cost;
+                    notUsingVehicleIsBest = false;
+                    notUsingVehicleDist = INFTY;
+                }
+            }
+        }
+
+        const std::unordered_map<int, Assignment>& getBestAssignmentsPerVehicle() const {
+            return bestAssignmentPerVehicle;
+        }
+
+        // ── helpers ──
 
         void tryNotUsingVehicleAssignment(const int notUsingVehDist, const int travelTimeOfDestEdge) {
             const int cost = CostCalculator::calcCostForNotUsingVehicle(notUsingVehDist, travelTimeOfDestEdge, *this);
@@ -164,6 +208,9 @@ namespace karri {
             bestCost = INFTY;
             notUsingVehicleIsBest = false;
             notUsingVehicleDist = INFTY;
+
+            bestAssignmentPerVehicle.clear();
+            bestCostPerVehicle.clear();
         }
 
     private:
@@ -179,5 +226,9 @@ namespace karri {
         int bestCost;
         bool notUsingVehicleIsBest;
         int notUsingVehicleDist;
+
+        // Per-vehicle best assignments for batched multi-vehicle dispatch
+        std::unordered_map<int, Assignment> bestAssignmentPerVehicle;
+        std::unordered_map<int, int> bestCostPerVehicle;
     };
 }
