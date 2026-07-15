@@ -10,7 +10,7 @@ This is a fork of [molaupi/karri](https://github.com/molaupi/karri) maintained b
 ## Remotes
 
 ```
-origin   → https://github.com/noobtimize/karri-1.git
+origin   → https://github.com/noobtimize/karri.git
 upstream → https://github.com/molaupi/karri.git
 ```
 
