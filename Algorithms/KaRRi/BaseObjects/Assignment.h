@@ -26,6 +26,7 @@
 #pragma once
 
 #include <cassert>
+#include <vector>
 
 #include "Vehicle.h"
 #include "Request.h"
@@ -87,6 +88,12 @@ namespace karri {
         int distFromPickup = 0; // Distance from pickup to next stop (or 0 if pickupStopIdx == dropoffStopIdx)
         int distToDropoff = 0; // Distance from previous stop to dropoff (or from pickup to dropoff if pickupStopIdx == dropoffStopIdx)
         int distFromDropoff = 0; // Distance from dropoff to next stop (or 0 if there is no next stop)
+
+        // The winning insertion path — sequence of graph edges from the vehicle's
+        // current position through the detour insertion, stored once after
+        // findBestAssignment() selects the winner. Distance in meters is derived
+        // from this path by summing per-edge great-circle distances.
+        std::vector<int> winningPathEdges;
     };
 
     // Criterion to make decision between two assignments with the same cost deterministic.
